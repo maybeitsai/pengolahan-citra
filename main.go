@@ -48,6 +48,21 @@ type ProcessResponse struct {
 	PixelMatrix string `json:"pixelMatrix"`
 }
 
+// HistogramData represents histogram information
+type HistogramData struct {
+	RedHistogram       []int   `json:"redHistogram"`
+	GreenHistogram     []int   `json:"greenHistogram"`
+	BlueHistogram      []int   `json:"blueHistogram"`
+	GrayscaleHistogram []int   `json:"grayscaleHistogram"`
+	Threshold          int     `json:"threshold"`
+	BinaryImageData    string  `json:"binaryImageData"`
+	MeanBefore         float64 `json:"meanBefore"`
+	StdDevBefore       float64 `json:"stdDevBefore"`
+	MeanAfter          float64 `json:"meanAfter"`
+	StdDevAfter        float64 `json:"stdDevAfter"`
+	EqualizedImageData string  `json:"equalizedImageData"`
+}
+
 var processor = &ImageProcessor{}
 
 func main() {
@@ -58,6 +73,7 @@ func main() {
 	http.HandleFunc("/pixel-info", handlePixelInfo)
 	http.HandleFunc("/process", handleProcess)
 	http.HandleFunc("/download", handleDownload)
+	http.HandleFunc("/histogram", handleHistogram)
 	
 	fmt.Println("🖼️  Image Processing Learning Tool")
 	fmt.Println("📡 Server starting on http://localhost:8080")
@@ -542,6 +558,142 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
             }
         }
         
+        /* Histogram Modal Styles */
+        .histogram-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .modal-content {
+            background: var(--bg-primary);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            width: 1200px;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .modal-header h2 {
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .modal-close:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+        
+        .modal-body {
+            padding: 2rem;
+        }
+        
+        .histogram-section {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .histogram-section:last-child {
+            border-bottom: none;
+        }
+        
+        .histogram-section h3 {
+            color: var(--text-primary);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .chart-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            overflow-x: auto;
+        }
+        
+        .threshold-info {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .binary-image-container, .equalized-image-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .binary-image-container canvas, .equalized-image-container canvas {
+            max-width: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+        
+        .equalization-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .stats-before, .stats-after {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+        }
+        
+        .stats-before h4, .stats-after h4 {
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stats-before p, .stats-after p {
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+        
         /* Additional Matrix and Control Panel Styles */
         .matrix-panel {
             grid-column: span 2;
@@ -739,6 +891,16 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
                     </div>
                     
                     <div class="operation-section">
+                        <h4>Histogram Analysis</h4>
+                        <div class="button-group single-column">
+                            <button class="btn btn-success" onclick="showHistogramAnalysis()">
+                                <span class="btn-icon">📊</span>
+                                Show Histogram & Analysis
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="operation-section">
                         <h4>Brightness Control</h4>
                         <div class="slider-container">
                             <label class="slider-label">
@@ -880,6 +1042,60 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
         <div class="loading-spinner">
             <div class="spinner"></div>
             <p>Processing image...</p>
+        </div>
+    </div>
+    
+    <!-- Histogram Modal -->
+    <div class="histogram-modal" id="histogramModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📊 Histogram Analysis</h2>
+                <button class="modal-close" onclick="closeHistogramModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="histogram-section">
+                    <h3>RGB Histograms</h3>
+                    <div class="chart-container">
+                        <canvas id="rgbHistogramChart" width="800" height="300"></canvas>
+                    </div>
+                </div>
+                
+                <div class="histogram-section">
+                    <h3>Grayscale Histogram</h3>
+                    <div class="chart-container">
+                        <canvas id="grayHistogramChart" width="800" height="300"></canvas>
+                    </div>
+                </div>
+                
+                <div class="histogram-section">
+                    <h3>Binary Threshold Analysis</h3>
+                    <div class="threshold-info">
+                        <p><strong>Calculated Threshold (Otsu's Method):</strong> <span id="thresholdValue">-</span></p>
+                    </div>
+                    <div class="binary-image-container">
+                        <canvas id="binaryCanvas" width="400" height="300"></canvas>
+                    </div>
+                </div>
+                
+                <div class="histogram-section">
+                    <h3>Histogram Equalization</h3>
+                    <div class="equalization-stats">
+                        <div class="stats-before">
+                            <h4>Before Equalization</h4>
+                            <p>Mean: <span id="meanBefore">-</span></p>
+                            <p>Std Dev: <span id="stdDevBefore">-</span></p>
+                        </div>
+                        <div class="stats-after">
+                            <h4>After Equalization</h4>
+                            <p>Mean: <span id="meanAfter">-</span></p>
+                            <p>Std Dev: <span id="stdDevAfter">-</span></p>
+                        </div>
+                    </div>
+                    <div class="equalized-image-container">
+                        <canvas id="equalizedCanvas" width="400" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1503,6 +1719,206 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
             }
         }
         
+        // Histogram functions
+        function showHistogramAnalysis() {
+            if (!currentImageData) {
+                showToast('Please upload an image first', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            
+            fetch('/histogram', {
+                method: 'GET'
+            })
+            .then(response => response.json())
+            .then(data => {
+                showLoading(false);
+                if (data.success) {
+                    displayHistogramData(data.data);
+                    document.getElementById('histogramModal').style.display = 'flex';
+                    showToast('Histogram analysis completed!', 'success');
+                } else {
+                    showToast('Failed to generate histogram: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showLoading(false);
+                showToast('Failed to generate histogram: ' + error.message, 'error');
+            });
+        }
+        
+        function displayHistogramData(data) {
+            // Display RGB histograms
+            drawRGBHistogram(data.redHistogram, data.greenHistogram, data.blueHistogram);
+            
+            // Display grayscale histogram
+            drawGrayscaleHistogram(data.grayscaleHistogram);
+            
+            // Display threshold value
+            document.getElementById('thresholdValue').textContent = data.threshold;
+            
+            // Display binary image
+            displayBinaryImage(data.binaryImageData);
+            
+            // Display equalized image
+            displayEqualizedImage(data.equalizedImageData);
+            
+            // Display statistics
+            document.getElementById('meanBefore').textContent = data.meanBefore.toFixed(2);
+            document.getElementById('stdDevBefore').textContent = data.stdDevBefore.toFixed(2);
+            document.getElementById('meanAfter').textContent = data.meanAfter.toFixed(2);
+            document.getElementById('stdDevAfter').textContent = data.stdDevAfter.toFixed(2);
+        }
+        
+        function drawRGBHistogram(redHist, greenHist, blueHist) {
+            let canvas = document.getElementById('rgbHistogramChart');
+            let ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            let width = canvas.width;
+            let height = canvas.height;
+            let barWidth = width / 256;
+            
+            // Find maximum value for scaling
+            let maxVal = Math.max(
+                Math.max(...redHist),
+                Math.max(...greenHist),
+                Math.max(...blueHist)
+            );
+            
+            if (maxVal === 0) maxVal = 1;
+            
+            // Draw histograms
+            for (let i = 0; i < 256; i++) {
+                let x = i * barWidth;
+                
+                // Red histogram
+                let redHeight = (redHist[i] / maxVal) * height;
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.6)';
+                ctx.fillRect(x, height - redHeight, barWidth, redHeight);
+                
+                // Green histogram
+                let greenHeight = (greenHist[i] / maxVal) * height;
+                ctx.fillStyle = 'rgba(0, 255, 0, 0.6)';
+                ctx.fillRect(x, height - greenHeight, barWidth, greenHeight);
+                
+                // Blue histogram
+                let blueHeight = (blueHist[i] / maxVal) * height;
+                ctx.fillStyle = 'rgba(0, 0, 255, 0.6)';
+                ctx.fillRect(x, height - blueHeight, barWidth, blueHeight);
+            }
+            
+            // Draw axes
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, height);
+            ctx.lineTo(width, height);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, height);
+            ctx.stroke();
+            
+            // Add labels
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.fillText('0', 5, height - 5);
+            ctx.fillText('255', width - 25, height - 5);
+            ctx.fillText('Intensity', width / 2 - 20, height - 5);
+        }
+        
+        function drawGrayscaleHistogram(grayHist) {
+            let canvas = document.getElementById('grayHistogramChart');
+            let ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            let width = canvas.width;
+            let height = canvas.height;
+            let barWidth = width / 256;
+            
+            // Find maximum value for scaling
+            let maxVal = Math.max(...grayHist);
+            if (maxVal === 0) maxVal = 1;
+            
+            // Draw histogram
+            for (let i = 0; i < 256; i++) {
+                let x = i * barWidth;
+                let barHeight = (grayHist[i] / maxVal) * height;
+                
+                ctx.fillStyle = '#666';
+                ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+            }
+            
+            // Draw axes
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, height);
+            ctx.lineTo(width, height);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, height);
+            ctx.stroke();
+            
+            // Add labels
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.fillText('0', 5, height - 5);
+            ctx.fillText('255', width - 25, height - 5);
+            ctx.fillText('Intensity', width / 2 - 20, height - 5);
+            
+            // Add count labels on y-axis
+            ctx.fillText('Count', 5, 15);
+            ctx.fillText(maxVal.toString(), 5, 30);
+        }
+        
+        function displayBinaryImage(imageData) {
+            if (!imageData) return;
+            
+            let canvas = document.getElementById('binaryCanvas');
+            let ctx = canvas.getContext('2d');
+            let img = new Image();
+            
+            img.onload = function() {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+            };
+            
+            img.src = 'data:image/png;base64,' + imageData;
+        }
+        
+        function displayEqualizedImage(imageData) {
+            if (!imageData) return;
+            
+            let canvas = document.getElementById('equalizedCanvas');
+            let ctx = canvas.getContext('2d');
+            let img = new Image();
+            
+            img.onload = function() {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+            };
+            
+            img.src = 'data:image/png;base64,' + imageData;
+        }
+        
+        function closeHistogramModal() {
+            document.getElementById('histogramModal').style.display = 'none';
+        }
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            let modal = document.getElementById('histogramModal');
+            if (event.target === modal) {
+                closeHistogramModal();
+            }
+        });
+        
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', init);
     </script>
@@ -1860,6 +2276,58 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Failed to encode image", http.StatusInternalServerError)
 	}
+}
+
+// handleHistogram handles histogram calculation and analysis
+func handleHistogram(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	
+	if processor.currentImage == nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "No image uploaded",
+		})
+		return
+	}
+	
+	// Calculate histograms
+	redHist, greenHist, blueHist, grayHist := calculateHistograms(processor.currentImage)
+	
+	// Calculate threshold using Otsu's method
+	threshold := calculateOtsuThreshold(grayHist)
+	
+	// Generate binary image
+	binaryImage := applyThreshold(processor.currentImage, threshold)
+	binaryImageData, _ := imageToBase64(binaryImage)
+	
+	// Calculate statistics before equalization
+	meanBefore, stdDevBefore := calculateImageStats(processor.currentImage)
+	
+	// Perform histogram equalization
+	equalizedImage := histogramEqualization(processor.currentImage)
+	equalizedImageData, _ := imageToBase64(equalizedImage)
+	
+	// Calculate statistics after equalization
+	meanAfter, stdDevAfter := calculateImageStats(equalizedImage)
+	
+	histogramData := HistogramData{
+		RedHistogram:       redHist,
+		GreenHistogram:     greenHist,
+		BlueHistogram:      blueHist,
+		GrayscaleHistogram: grayHist,
+		Threshold:          threshold,
+		BinaryImageData:    binaryImageData,
+		MeanBefore:         meanBefore,
+		StdDevBefore:       stdDevBefore,
+		MeanAfter:          meanAfter,
+		StdDevAfter:        stdDevAfter,
+		EqualizedImageData: equalizedImageData,
+	}
+	
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data":    histogramData,
+	})
 }
 
 // Helper functions for image processing
@@ -2437,4 +2905,200 @@ func applyAllTransformations(baseImg image.Image, brightnessVal, zoomVal, rotate
 func sendJSONResponse(w http.ResponseWriter, response ProcessResponse) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// Histogram and image analysis functions
+
+// calculateHistograms computes RGB and grayscale histograms
+func calculateHistograms(img image.Image) ([]int, []int, []int, []int) {
+	bounds := img.Bounds()
+	
+	// Initialize histogram arrays for 256 intensity levels (0-255)
+	redHist := make([]int, 256)
+	greenHist := make([]int, 256)
+	blueHist := make([]int, 256)
+	grayHist := make([]int, 256)
+	
+	// Iterate through all pixels
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			r, g, b, _ := img.At(x, y).RGBA()
+			
+			// Convert from 16-bit to 8-bit values
+			r8 := uint8(r >> 8)
+			g8 := uint8(g >> 8)
+			b8 := uint8(b >> 8)
+			
+			// Increment histogram bins
+			redHist[r8]++
+			greenHist[g8]++
+			blueHist[b8]++
+			
+			// Calculate grayscale value using standard luminance formula
+			gray := uint8(0.299*float64(r8) + 0.587*float64(g8) + 0.114*float64(b8))
+			grayHist[gray]++
+		}
+	}
+	
+	return redHist, greenHist, blueHist, grayHist
+}
+
+// calculateOtsuThreshold implements Otsu's method for automatic threshold selection
+func calculateOtsuThreshold(histogram []int) int {
+	total := 0
+	for _, count := range histogram {
+		total += count
+	}
+	
+	if total == 0 {
+		return 128 // Default threshold if no pixels
+	}
+	
+	sum := 0.0
+	for i, count := range histogram {
+		sum += float64(i * count)
+	}
+	
+	sumB := 0.0
+	wB := 0
+	wF := 0
+	varMax := 0.0
+	threshold := 0
+	
+	for t := 0; t < 256; t++ {
+		wB += histogram[t] // Weight Background
+		if wB == 0 {
+			continue
+		}
+		
+		wF = total - wB // Weight Foreground
+		if wF == 0 {
+			break
+		}
+		
+		sumB += float64(t * histogram[t])
+		
+		mB := sumB / float64(wB)             // Mean Background
+		mF := (sum - sumB) / float64(wF)     // Mean Foreground
+		
+		// Calculate Between Class Variance
+		varBetween := float64(wB) * float64(wF) * (mB - mF) * (mB - mF)
+		
+		// Check if new maximum found
+		if varBetween > varMax {
+			varMax = varBetween
+			threshold = t
+		}
+	}
+	
+	return threshold
+}
+
+// applyThreshold creates a binary image using the specified threshold
+func applyThreshold(img image.Image, threshold int) image.Image {
+	bounds := img.Bounds()
+	binaryImg := image.NewGray(bounds)
+	
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			r, g, b, _ := img.At(x, y).RGBA()
+			
+			// Convert to grayscale
+			gray := uint8(0.299*float64(r>>8) + 0.587*float64(g>>8) + 0.114*float64(b>>8))
+			
+			// Apply threshold
+			if int(gray) >= threshold {
+				binaryImg.SetGray(x, y, color.Gray{255}) // White
+			} else {
+				binaryImg.SetGray(x, y, color.Gray{0}) // Black
+			}
+		}
+	}
+	
+	return binaryImg
+}
+
+// calculateImageStats computes mean and standard deviation of image intensities
+func calculateImageStats(img image.Image) (float64, float64) {
+	bounds := img.Bounds()
+	totalPixels := 0
+	sum := 0.0
+	
+	// Calculate mean
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			r, g, b, _ := img.At(x, y).RGBA()
+			gray := 0.299*float64(r>>8) + 0.587*float64(g>>8) + 0.114*float64(b>>8)
+			sum += gray
+			totalPixels++
+		}
+	}
+	
+	if totalPixels == 0 {
+		return 0, 0
+	}
+	
+	mean := sum / float64(totalPixels)
+	
+	// Calculate standard deviation
+	sumSquared := 0.0
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			r, g, b, _ := img.At(x, y).RGBA()
+			gray := 0.299*float64(r>>8) + 0.587*float64(g>>8) + 0.114*float64(b>>8)
+			diff := gray - mean
+			sumSquared += diff * diff
+		}
+	}
+	
+	variance := sumSquared / float64(totalPixels)
+	stdDev := math.Sqrt(variance)
+	
+	return mean, stdDev
+}
+
+// histogramEqualization performs uniform histogram equalization
+func histogramEqualization(img image.Image) image.Image {
+	bounds := img.Bounds()
+	
+	// Calculate histogram first
+	_, _, _, grayHist := calculateHistograms(img)
+	
+	// Calculate total number of pixels
+	totalPixels := (bounds.Max.X - bounds.Min.X) * (bounds.Max.Y - bounds.Min.Y)
+	
+	// Calculate cumulative distribution function (CDF)
+	cdf := make([]float64, 256)
+	cdf[0] = float64(grayHist[0])
+	for i := 1; i < 256; i++ {
+		cdf[i] = cdf[i-1] + float64(grayHist[i])
+	}
+	
+	// Normalize CDF to range [0, 255]
+	lookupTable := make([]uint8, 256)
+	for i := 0; i < 256; i++ {
+		lookupTable[i] = uint8(math.Round((cdf[i] / float64(totalPixels)) * 255.0))
+	}
+	
+	// Create equalized image
+	equalizedImg := image.NewRGBA(bounds)
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			r, g, b, a := img.At(x, y).RGBA()
+			
+			// Convert to grayscale and apply equalization
+			gray := uint8(0.299*float64(r>>8) + 0.587*float64(g>>8) + 0.114*float64(b>>8))
+			equalizedGray := lookupTable[gray]
+			
+			// Set the equalized grayscale value to all RGB channels
+			equalizedImg.Set(x, y, color.RGBA{
+				R: equalizedGray,
+				G: equalizedGray,
+				B: equalizedGray,
+				A: uint8(a >> 8),
+			})
+		}
+	}
+	
+	return equalizedImg
 }

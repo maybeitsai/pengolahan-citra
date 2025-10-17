@@ -35,6 +35,15 @@ A comprehensive, web-based image processing application built with Go for learni
 - **Interactive Matrix Highlighting** - Cursor position highlights corresponding matrix cell
 - **Image Information Display** - Shows dimensions, coordinates, and color values
 
+### 📈 **Advanced Histogram Analysis**
+
+- **RGB Histograms** - Visual distribution of Red, Green, and Blue channel intensities
+- **Grayscale Histogram** - Distribution analysis of grayscale intensity values
+- **Automatic Threshold Detection** - Otsu's method for optimal binary threshold calculation
+- **Binary Image Generation** - Automatic conversion to binary based on calculated threshold
+- **Histogram Equalization** - Uniform histogram equalization for contrast enhancement
+- **Statistical Analysis** - Mean and Standard Deviation before/after equalization
+
 ### 🚀 **Performance Optimized**
 
 - **Parallel Processing** - Multi-threaded image operations using goroutines
@@ -91,11 +100,22 @@ A comprehensive, web-based image processing application built with Go for learni
 4. **Reset**: Return to original image at any time
 5. **Download**: Save processed images to your computer
 
-### 🔍 **Learning Features**
+### � **Histogram Analysis**
+
+1. **Generate Analysis**: Click "Show Histogram & Analysis" after uploading an image
+2. **RGB Histograms**: View color distribution across all three channels simultaneously
+3. **Grayscale Analysis**: Examine intensity distribution in grayscale conversion
+4. **Threshold Analysis**: See automatically calculated optimal threshold using Otsu's method
+5. **Binary Conversion**: View the resulting binary image from threshold application
+6. **Histogram Equalization**: Compare original vs. equalized images with statistical data
+
+### �🔍 **Learning Features**
 
 - **Pixel Inspection**: Move cursor over image to see real-time RGB values
 - **Matrix View**: Observe how image operations affect pixel values
 - **Coordinate System**: Understand image coordinate systems and pixel positions
+- **Statistical Insights**: Learn about mean, standard deviation, and histogram distribution
+- **Algorithm Visualization**: See real-time effects of Otsu's thresholding and histogram equalization
 
 ### 📚 **Two-Image Operations**
 
@@ -130,6 +150,9 @@ A comprehensive, web-based image processing application built with Go for learni
 
 - **ImageProcessor**: Core struct managing image state and transformations
 - **Transformation Pipeline**: Applies multiple operations in optimal order
+- **Histogram Engine**: Advanced statistical analysis and visualization system
+- **Threshold Calculator**: Otsu's method implementation for optimal binary conversion
+- **Equalization Engine**: Uniform histogram equalization with statistical tracking
 - **Cache System**: LRU cache for performance optimization
 - **Matrix Generator**: Creates educational pixel matrices
 
@@ -146,21 +169,36 @@ A comprehensive, web-based image processing application built with Go for learni
 Pengolahan Citra/
 ├── main.go           # Complete application (web server + image processing)
 ├── go.mod           # Go module definition (no external dependencies)
-├── README.md        # This documentation
+├── README.md        # This comprehensive documentation
 └── images/          # Sample test images
     ├── checkerboard.png
     ├── test_image_1.png
     └── test_image_2.png
 ```
 
+## 🔗 API Endpoints
+
+The application provides several REST endpoints:
+
+- **`GET /`** - Main application interface
+- **`POST /upload`** - Primary image upload
+- **`POST /upload-second`** - Secondary image upload for operations
+- **`GET /pixel-info`** - Real-time pixel information retrieval
+- **`POST /process`** - Image transformation operations
+- **`GET /histogram`** - **NEW!** Comprehensive histogram analysis
+- **`GET /download`** - Processed image download
+
 ## 🎯 Educational Value
 
 This tool is perfect for:
 
-- **Computer Vision Students**: Understanding pixel-level operations
-- **Image Processing Courses**: Interactive learning of transformations
-- **Algorithm Visualization**: Seeing real-time effects of processing
+- **Computer Vision Students**: Understanding pixel-level operations and histogram analysis
+- **Image Processing Courses**: Interactive learning of transformations and statistical methods
+- **Algorithm Visualization**: Seeing real-time effects of processing and threshold algorithms
 - **Matrix Operations**: Understanding images as numerical matrices
+- **Statistical Analysis**: Learning about image statistics, distributions, and equalization
+- **Threshold Methods**: Hands-on experience with Otsu's automatic thresholding
+- **Contrast Enhancement**: Understanding histogram equalization and its effects
 
 ## 🔧 Supported Image Formats
 
@@ -176,12 +214,40 @@ This tool is perfect for:
 - **Memory Usage**: Optimized with automatic cleanup
 - **Browser Compatibility**: All modern browsers
 
-## 🚀 Advanced Features
+## � Histogram Analysis Features
+
+### **Statistical Analysis**
+
+- **RGB Channel Histograms**: Individual analysis of Red, Green, and Blue distributions
+- **Grayscale Histogram**: Comprehensive intensity distribution analysis
+- **Real-time Calculation**: Instant histogram generation for uploaded images
+
+### **Automatic Thresholding**
+
+- **Otsu's Method**: Implementation of optimal threshold selection algorithm
+- **Binary Conversion**: Automatic generation of binary images using calculated threshold
+- **Threshold Visualization**: Clear display of threshold value and its effects
+
+### **Histogram Equalization**
+
+- **Uniform Distribution**: Advanced histogram equalization for contrast enhancement
+- **Before/After Comparison**: Side-by-side statistical comparison
+- **Statistical Metrics**: Mean and Standard Deviation tracking
+- **Visual Results**: Immediate display of equalized image results
+
+### **Educational Insights**
+
+- **Interactive Charts**: Visual histogram representation with proper scaling
+- **Numerical Data**: Access to raw histogram values for deeper analysis
+- **Algorithm Understanding**: Learn how thresholding and equalization algorithms work
+
+## �🚀 Advanced Features
 
 - **State Management**: Preserves transformations across operations
 - **Error Handling**: Graceful error recovery and user feedback
 - **Responsive Design**: Works on desktop and tablet devices
 - **Professional UI**: Modern, clean interface with toast notifications
+- **Modal Interface**: Dedicated histogram analysis window with comprehensive data
 
 ## 💡 Tips for Best Experience
 
@@ -190,6 +256,11 @@ This tool is perfect for:
 3. **Experiment with combinations** - zoom, rotate, and adjust brightness together
 4. **Use the reset button** to return to the original image anytime
 5. **Explore pixel values** by hovering over different parts of the image
+6. **🆕 Analyze histograms** - Upload an image and click "Show Histogram & Analysis"
+7. **🆕 Compare statistics** - Notice how mean and std deviation change after equalization
+8. **🆕 Test different images** - Try images with different contrast levels to see histogram effects
+9. **🆕 Study threshold values** - See how Otsu's method finds optimal binary thresholds
+10. **🆕 Learn from charts** - Use the visual histograms to understand image characteristics
 
 ## 🎓 Learning Objectives
 
@@ -199,6 +270,11 @@ By using this tool, you will understand:
 - The effects of various image processing operations
 - Real-time processing and optimization techniques
 - The relationship between mathematical operations and visual results
+- **Histogram Analysis**: How to interpret and analyze image intensity distributions
+- **Automatic Thresholding**: Understanding Otsu's method for optimal binary conversion
+- **Statistical Measures**: Computing and interpreting mean and standard deviation
+- **Histogram Equalization**: Contrast enhancement through histogram redistribution
+- **Color Channel Analysis**: Individual RGB channel behavior and characteristics
 
 ---
 
