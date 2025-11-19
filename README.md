@@ -47,7 +47,7 @@ This project has been completely refactored from a monolithic 3,104-line file in
 - **Interactive Matrix Highlighting** - Cursor position highlights corresponding matrix cell
 - **Image Information Display** - Shows dimensions, coordinates, and color values
 
-### 📈 **Advanced Histogram Analysis**
+### 📊 **Advanced Histogram Analysis**
 
 - **RGB Histograms** - Visual distribution of Red, Green, and Blue channel intensities
 - **Grayscale Histogram** - Distribution analysis of grayscale intensity values
@@ -55,6 +55,16 @@ This project has been completely refactored from a monolithic 3,104-line file in
 - **Binary Image Generation** - Automatic conversion to binary based on calculated threshold
 - **Histogram Equalization** - Uniform histogram equalization for contrast enhancement
 - **Statistical Analysis** - Mean and Standard Deviation before/after equalization
+
+### 🔍 **NEW: Sobel Edge Detection**
+
+- **Full Sobel Detection** - Complete edge detection with magnitude calculation
+- **Sobel X (Vertical Edges)** - Detects vertical edges using Sobel X kernel
+- **Sobel Y (Horizontal Edges)** - Detects horizontal edges using Sobel Y kernel
+- **Convolution Matrix Display** - View complete convolution matrices for educational purposes
+- **Kernel Visualization** - Interactive display of 3x3 Sobel kernels
+- **Magnitude & Gradient** - Calculate edge strength and direction
+- **Real-time Processing** - Instant edge detection with professional algorithms
 
 ### 🚀 **Performance Optimized**
 
@@ -90,14 +100,19 @@ image-processor/
     │   ├── interfaces.go            # Service interface definitions
     │   ├── image_processor.go       # Image processing implementation
     │   ├── histogram.go             # Histogram analysis service
+    │   ├── edge_detection.go        # NEW: Sobel edge detection service
     │   └── state_manager.go         # Application state management
     ├── handlers/                    # HTTP handlers layer
     │   └── image.go                 # HTTP request handlers with DI
     ├── utils/                       # Utility functions
     │   ├── image.go                 # Image conversion utilities
     │   └── http.go                  # HTTP response utilities
-    └── templates/                   # UI templates
-        └── home.go                  # HTML template with embedded CSS/JS
+    ├── templates/                   # UI templates
+    │   └── home.go                  # HTML template with embedded CSS/JS
+    ├── docs/                        # Documentation
+    │   └── SOBEL_EDGE_DETECTION.md  # NEW: Complete Sobel feature documentation
+    └── static/                      # Static assets
+        └── sobel-demo.html          # NEW: Interactive Sobel demo page
 ```
 
 ## 🚀 Quick Start
@@ -439,7 +454,8 @@ The application provides several REST endpoints:
 - **`POST /upload-second`** - Secondary image upload for operations
 - **`GET /pixel-info`** - Real-time pixel information retrieval
 - **`POST /process`** - Image transformation operations
-- **`GET /histogram`** - **NEW!** Comprehensive histogram analysis
+- **`GET /histogram`** - Comprehensive histogram analysis
+- **`POST /edge-detection`** - **NEW!** Sobel edge detection with convolution matrices
 - **`GET /download`** - Processed image download
 
 ## 🎯 Educational Value
