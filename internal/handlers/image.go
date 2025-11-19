@@ -15,9 +15,10 @@ import (
 
 // ImageHandler handles image-related HTTP requests
 type ImageHandler struct {
-	stateManager      services.StateManager
-	imageProcessor    services.ImageProcessorService
-	histogramService  services.HistogramService
+	stateManager         services.StateManager
+	imageProcessor       services.ImageProcessorService
+	histogramService     services.HistogramService
+	edgeDetectionService services.EdgeDetectionService
 }
 
 // NewImageHandler creates a new image handler
@@ -25,11 +26,13 @@ func NewImageHandler(
 	stateManager services.StateManager,
 	imageProcessor services.ImageProcessorService,
 	histogramService services.HistogramService,
+	edgeDetectionService services.EdgeDetectionService,
 ) *ImageHandler {
 	return &ImageHandler{
-		stateManager:     stateManager,
-		imageProcessor:   imageProcessor,
-		histogramService: histogramService,
+		stateManager:         stateManager,
+		imageProcessor:       imageProcessor,
+		histogramService:     histogramService,
+		edgeDetectionService: edgeDetectionService,
 	}
 }
 
@@ -383,5 +386,65 @@ func (h *ImageHandler) HandleHistogram(w http.ResponseWriter, r *http.Request) {
 	utils.SendJSONResponse(w, models.HistogramResponse{
 		Success: true,
 		Data:    *histogramData,
+	})
+}
+
+// HandleEdgeDetection handles Sobel edge detection operations
+func (h *ImageHandler) HandleEdgeDetection(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		utils.SendJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	var request models.EdgeDetectionRequest
+	
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		utils.SendJSONResponse(w, models.EdgeDetectionResponse{
+			Success: false,
+			Message: "Invalid request: " + err.Error(),
+		})
+		return
+	}
+	
+	currentImg := h.stateManager.GetCurrentImage()
+	if currentImg == nil {
+		utils.SendJSONResponse(w, models.EdgeDetectionResponse{
+			Success: false,
+			Message: "No image loaded",
+		})
+		return
+	}
+	
+	var result *models.EdgeDetectionResult
+	var err2 error
+	
+	switch request.Operation {
+	case "sobel":
+		result, err2 = h.edgeDetectionService.ApplySobelEdgeDetection(currentImg)
+	case "sobelX":
+		result, err2 = h.edgeDetectionService.ApplySobelX(currentImg)
+	case "sobelY":
+		result, err2 = h.edgeDetectionService.ApplySobelY(currentImg)
+	default:
+		utils.SendJSONResponse(w, models.EdgeDetectionResponse{
+			Success: false,
+			Message: "Unknown edge detection operation: " + request.Operation,
+		})
+		return
+	}
+	
+	if err2 != nil {
+		utils.SendJSONResponse(w, models.EdgeDetectionResponse{
+			Success: false,
+			Message: "Edge detection failed: " + err2.Error(),
+		})
+		return
+	}
+	
+	utils.SendJSONResponse(w, models.EdgeDetectionResponse{
+		Success: true,
+		Message: "Edge detection completed successfully",
+		Data:    result,
 	})
 }

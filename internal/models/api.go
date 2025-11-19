@@ -48,3 +48,38 @@ type HistogramResponse struct {
 	Message string        `json:"message,omitempty"`
 	Data    HistogramData `json:"data,omitempty"`
 }
+
+// ConvolutionResult represents the result of a convolution operation
+type ConvolutionResult struct {
+	ResultImage     string      `json:"resultImage"`
+	Kernel          [][]int     `json:"kernel"`
+	KernelName      string      `json:"kernelName"`
+	ConvolutionData [][]float64 `json:"convolutionData"`
+	ImageWidth      int         `json:"imageWidth"`
+	ImageHeight     int         `json:"imageHeight"`
+}
+
+// EdgeDetectionResult represents the result of edge detection
+type EdgeDetectionResult struct {
+	EdgeImage       string             `json:"edgeImage"`
+	MagnitudeImage  string             `json:"magnitudeImage"`
+	SobelXResult    *ConvolutionResult `json:"sobelXResult"`
+	SobelYResult    *ConvolutionResult `json:"sobelYResult"`
+	SobelXKernel    [][]int            `json:"sobelXKernel"`
+	SobelYKernel    [][]int            `json:"sobelYKernel"`
+	MagnitudeData   [][]float64        `json:"magnitudeData"`
+	GradientData    [][]float64        `json:"gradientData"`
+}
+
+// EdgeDetectionResponse represents the response for edge detection operations
+type EdgeDetectionResponse struct {
+	Success bool                 `json:"success"`
+	Message string               `json:"message,omitempty"`
+	Data    *EdgeDetectionResult `json:"data,omitempty"`
+}
+
+// EdgeDetectionRequest represents a request for edge detection
+type EdgeDetectionRequest struct {
+	Operation string `json:"operation"` // "sobel", "sobelX", "sobelY"
+	Threshold int    `json:"threshold,omitempty"`
+}

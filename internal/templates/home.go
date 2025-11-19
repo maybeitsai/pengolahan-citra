@@ -468,6 +468,24 @@ func (th *TemplateHandler) ServeHome(w http.ResponseWriter, r *http.Request) {
                     </div>
                     
                     <div class="operation-section">
+                        <h4>🔍 Edge Detection</h4>
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick="performEdgeDetection('sobel')">
+                                <span class="btn-icon">🔍</span>
+                                Full Sobel
+                            </button>
+                            <button class="btn btn-primary" onclick="performEdgeDetection('sobelX')">
+                                <span class="btn-icon">↕️</span>
+                                Sobel X
+                            </button>
+                            <button class="btn btn-primary" onclick="performEdgeDetection('sobelY')">
+                                <span class="btn-icon">↔️</span>
+                                Sobel Y
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="operation-section">
                         <h4>Brightness Control</h4>
                         <div class="slider-container">
                             <label class="slider-label">
@@ -1159,6 +1177,281 @@ func (th *TemplateHandler) ServeHome(w http.ResponseWriter, r *http.Request) {
             ctx.moveTo(0, 0);
             ctx.lineTo(0, height);
             ctx.stroke();
+        }
+        
+        function performEdgeDetection(operation) {
+            if (!currentImageData) {
+                alert('Please upload an image first');
+                return;
+            }
+            
+            showLoading(true);
+            
+            fetch('/edge-detection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    operation: operation
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                showLoading(false);
+                if (data.success) {
+                    displayEdgeDetectionResults(data.data, operation);
+                } else {
+                    alert('Edge detection failed: ' + data.message);
+                }
+            })
+            .catch(error => {
+                showLoading(false);
+                alert('Edge detection error: ' + error.message);
+            });
+        }
+        
+        function displayEdgeDetectionResults(data, operation) {
+            // Display the main edge detection result
+            if (data.edgeImage) {
+                displayImage(data.edgeImage);
+            }
+            
+            // Create modal window for detailed results
+            const modal = document.createElement('div');
+            modal.style.cssText = ` + "`" + `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                z-index: 1000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                backdrop-filter: blur(4px);
+            ` + "`" + `;
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = ` + "`" + `
+                background: white;
+                border-radius: 12px;
+                padding: 2rem;
+                max-width: 95vw;
+                max-height: 95vh;
+                overflow-y: auto;
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+                position: relative;
+            ` + "`" + `;
+            
+            let resultsHTML = ` + "`" + `
+                <div style="font-family: 'Inter', sans-serif;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 1rem;">
+                        <h2 style="margin: 0; color: #1e293b; font-size: 1.5rem;">🔍 Sobel Edge Detection Results</h2>
+                        <button onclick="this.closest('.modal').remove()" style="background: #ef4444; color: white; border: none; border-radius: 50%; width: 2rem; height: 2rem; cursor: pointer; font-size: 1rem;">×</button>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                        <div>
+                            <h3 style="color: #374151; margin-bottom: 1rem;">📐 Sobel Kernels</h3>
+            ` + "`" + `;
+            
+            // Display kernels based on operation type
+            if (operation === 'sobel') {
+                // Show both kernels for full Sobel
+                resultsHTML += ` + "`" + `
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div>
+                                    <h4 style="text-align: center; margin-bottom: 0.5rem; color: #6b7280;">Sobel X (Vertical Edges)</h4>
+                                    <div id="sobelXKernel" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; max-width: 120px; margin: 0 auto; border: 2px solid #3b82f6; padding: 8px; border-radius: 8px; background: #eff6ff;"></div>
+                                </div>
+                                <div>
+                                    <h4 style="text-align: center; margin-bottom: 0.5rem; color: #6b7280;">Sobel Y (Horizontal Edges)</h4>
+                                    <div id="sobelYKernel" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; max-width: 120px; margin: 0 auto; border: 2px solid #10b981; padding: 8px; border-radius: 8px; background: #ecfdf5;"></div>
+                                </div>
+                            </div>
+                ` + "`" + `;
+            } else if (operation === 'sobelX') {
+                // Show only Sobel X kernel
+                resultsHTML += ` + "`" + `
+                            <div style="display: flex; justify-content: center;">
+                                <div>
+                                    <h4 style="text-align: center; margin-bottom: 0.5rem; color: #6b7280;">Sobel X (Vertical Edges)</h4>
+                                    <div id="sobelXKernel" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; max-width: 120px; margin: 0 auto; border: 2px solid #3b82f6; padding: 8px; border-radius: 8px; background: #eff6ff;"></div>
+                                </div>
+                            </div>
+                ` + "`" + `;
+            } else if (operation === 'sobelY') {
+                // Show only Sobel Y kernel
+                resultsHTML += ` + "`" + `
+                            <div style="display: flex; justify-content: center;">
+                                <div>
+                                    <h4 style="text-align: center; margin-bottom: 0.5rem; color: #6b7280;">Sobel Y (Horizontal Edges)</h4>
+                                    <div id="sobelYKernel" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; max-width: 120px; margin: 0 auto; border: 2px solid #10b981; padding: 8px; border-radius: 8px; background: #ecfdf5;"></div>
+                                </div>
+                            </div>
+                ` + "`" + `;
+            }
+            
+            resultsHTML += ` + "`" + `
+                        </div>
+                        <div>
+                            <h3 style="color: #374151; margin-bottom: 1rem;">📊 Edge Detection Results</h3>
+                            <div style="display: grid; gap: 1rem;">
+            ` + "`" + `;
+            
+            // Add images based on operation
+            if (operation === 'sobel') {
+                resultsHTML += ` + "`" + `
+                    <div style="text-align: center;">
+                        <h4 style="margin-bottom: 0.5rem;">Combined Edge Detection</h4>
+                        <img src="data:image/png;base64,` + "${data.edgeImage}" + `" style="max-width: 200px; border: 1px solid #e2e8f0; border-radius: 6px;" alt="Combined Edges">
+                    </div>
+                ` + "`" + `;
+                if (data.magnitudeImage) {
+                    resultsHTML += ` + "`" + `
+                        <div style="text-align: center;">
+                            <h4 style="margin-bottom: 0.5rem;">Magnitude Image</h4>
+                            <img src="data:image/png;base64,` + "${data.magnitudeImage}" + `" style="max-width: 200px; border: 1px solid #e2e8f0; border-radius: 6px;" alt="Magnitude">
+                        </div>
+                    ` + "`" + `;
+                }
+            } else {
+                resultsHTML += ` + "`" + `
+                    <div style="text-align: center;">
+                        <h4 style="margin-bottom: 0.5rem;">` + "${operation.toUpperCase()}" + ` Result</h4>
+                        <img src="data:image/png;base64,` + "${data.edgeImage}" + `" style="max-width: 250px; border: 1px solid #e2e8f0; border-radius: 6px;" alt="` + "${operation}" + ` Edges">
+                    </div>
+                ` + "`" + `;
+            }
+            
+            resultsHTML += ` + "`" + `
+                            </div>
+                        </div>
+                    </div>
+            ` + "`" + `;
+            
+            // Add convolution matrices
+            if (operation === 'sobel' && data.sobelXResult && data.sobelYResult) {
+                resultsHTML += ` + "`" + `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: #374151; margin-bottom: 1rem;">🔢 Convolution Matrices</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                            <div>
+                                <h4 style="margin-bottom: 1rem; color: #6b7280;">Sobel X Convolution Matrix</h4>
+                                <div style="max-height: 200px; overflow: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem; font-family: monospace;">
+                ` + "`" + `;
+                
+                // Add Sobel X matrix (first 10x10 for performance)
+                const xMatrix = data.sobelXResult.convolutionData;
+                const maxRows = Math.min(xMatrix.length, 10);
+                const maxCols = Math.min(xMatrix[0] ? xMatrix[0].length : 0, 10);
+                
+                for (let i = 0; i < maxRows; i++) {
+                    resultsHTML += '<tr>';
+                    for (let j = 0; j < maxCols; j++) {
+                        const value = xMatrix[i] && xMatrix[i][j] !== undefined ? xMatrix[i][j].toFixed(1) : '0.0';
+                        resultsHTML += ` + "`<td style=\"padding: 2px 4px; border: 1px solid #e2e8f0; text-align: right;\">${value}</td>`" + `;
+                    }
+                    resultsHTML += '</tr>';
+                }
+                
+                resultsHTML += ` + "`" + `
+                                    </table>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 style="margin-bottom: 1rem; color: #6b7280;">Sobel Y Convolution Matrix</h4>
+                                <div style="max-height: 200px; overflow: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem; font-family: monospace;">
+                ` + "`" + `;
+                
+                // Add Sobel Y matrix (first 10x10 for performance)  
+                const yMatrix = data.sobelYResult.convolutionData;
+                
+                for (let i = 0; i < maxRows; i++) {
+                    resultsHTML += '<tr>';
+                    for (let j = 0; j < maxCols; j++) {
+                        const value = yMatrix[i] && yMatrix[i][j] !== undefined ? yMatrix[i][j].toFixed(1) : '0.0';
+                        resultsHTML += ` + "`<td style=\"padding: 2px 4px; border: 1px solid #e2e8f0; text-align: right;\">${value}</td>`" + `;
+                    }
+                    resultsHTML += '</tr>';
+                }
+                
+                resultsHTML += ` + "`" + `
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ` + "`" + `;
+            } else if ((operation === 'sobelX' && data.sobelXResult) || (operation === 'sobelY' && data.sobelYResult)) {
+                const result = operation === 'sobelX' ? data.sobelXResult : data.sobelYResult;
+                resultsHTML += ` + "`" + `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: #374151; margin-bottom: 1rem;">🔢 Convolution Matrix (` + "${operation.toUpperCase()}" + `)</h3>
+                        <div style="max-height: 300px; overflow: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem; font-family: monospace;">
+                ` + "`" + `;
+                
+                const matrix = result.convolutionData;
+                const maxRows = Math.min(matrix.length, 15);
+                const maxCols = Math.min(matrix[0] ? matrix[0].length : 0, 15);
+                
+                for (let i = 0; i < maxRows; i++) {
+                    resultsHTML += '<tr>';
+                    for (let j = 0; j < maxCols; j++) {
+                        const value = matrix[i] && matrix[i][j] !== undefined ? matrix[i][j].toFixed(1) : '0.0';
+                        resultsHTML += ` + "`<td style=\"padding: 3px 6px; border: 1px solid #e2e8f0; text-align: right;\">${value}</td>`" + `;
+                    }
+                    resultsHTML += '</tr>';
+                }
+                
+                resultsHTML += ` + "`" + `
+                            </table>
+                        </div>
+                    </div>
+                ` + "`" + `;
+            }
+            
+            resultsHTML += ` + "`" + `
+                    <div style="text-align: center;">
+                        <button onclick="this.closest('.modal').remove()" style="background: #3b82f6; color: white; border: none; padding: 0.75rem 2rem; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: 500;">Close Results</button>
+                    </div>
+                </div>
+            ` + "`" + `;
+            
+            modalContent.innerHTML = resultsHTML;
+            modal.appendChild(modalContent);
+            modal.className = 'modal';
+            document.body.appendChild(modal);
+            
+            // Display kernels
+            setTimeout(() => {
+                if (data.sobelXKernel) {
+                    displayKernelInModal('sobelXKernel', data.sobelXKernel);
+                }
+                if (data.sobelYKernel) {
+                    displayKernelInModal('sobelYKernel', data.sobelYKernel);
+                }
+            }, 100);
+        }
+        
+        function displayKernelInModal(containerId, kernel) {
+            const container = document.getElementById(containerId);
+            if (!container || !kernel) return;
+            
+            container.innerHTML = '';
+            kernel.forEach(row => {
+                row.forEach(value => {
+                    const cell = document.createElement('div');
+                    cell.style.cssText = 'background: white; border: 1px solid #d1d5db; padding: 6px; text-align: center; font-weight: bold; font-size: 0.75rem; border-radius: 4px;';
+                    cell.textContent = value;
+                    container.appendChild(cell);
+                });
+            });
         }
         
         function showLoading(show) {

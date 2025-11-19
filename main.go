@@ -25,12 +25,14 @@ func NewApp() *App {
 	stateManager := services.NewStateManager()
 	imageProcessor := services.NewImageProcessorService()
 	histogramService := services.NewHistogramService()
+	edgeDetectionService := services.NewEdgeDetectionService()
 	
 	// Initialize handlers with dependency injection
 	imageHandler := handlers.NewImageHandler(
 		stateManager,
 		imageProcessor,
 		histogramService,
+		edgeDetectionService,
 	)
 	
 	templateHandler := templates.NewTemplateHandler()
@@ -53,9 +55,10 @@ func (app *App) setupRoutes() {
 	http.HandleFunc("/process", app.imageHandler.HandleProcess)
 	http.HandleFunc("/download", app.imageHandler.HandleDownload)
 	http.HandleFunc("/histogram", app.imageHandler.HandleHistogram)
+	http.HandleFunc("/edge-detection", app.imageHandler.HandleEdgeDetection)
 	
-	// Static files (if needed in the future)
-	// http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
+	// Static files
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
 }
 
 // start starts the HTTP server

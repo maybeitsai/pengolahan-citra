@@ -36,6 +36,18 @@ type HistogramService interface {
 	GenerateHistogramData(img image.Image) *models.HistogramData
 }
 
+// EdgeDetectionService defines the interface for edge detection operations
+type EdgeDetectionService interface {
+	// Sobel edge detection
+	ApplySobelEdgeDetection(img image.Image) (*models.EdgeDetectionResult, error)
+	ApplySobelX(img image.Image) (*models.EdgeDetectionResult, error)
+	ApplySobelY(img image.Image) (*models.EdgeDetectionResult, error)
+	
+	// Utility methods
+	GetSobelKernels() ([][]int, [][]int)
+	ApplyConvolution(img image.Image, kernel [][]int) (*models.ConvolutionResult, error)
+}
+
 // StateManager defines the interface for managing image processor state
 type StateManager interface {
 	GetProcessor() *models.ImageProcessor
